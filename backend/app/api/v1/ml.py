@@ -50,3 +50,48 @@ async def detect_spill_endpoint(
         pixel_res_meters=pixel_res_meters
     )
     return detection
+
+@router.post("/predict-live")
+async def predict_live_endpoint(
+    file: UploadFile = File(..., description="Sentinel-1 SAR image (PNG, JPG, JPEG)")
+):
+    """
+    Directly queries the live MARIS Oil Spill Segmentation model on Render.
+    Trained on Sentinel-1 SAR Oil Spill Detection Dataset & SOS Segmentation Dataset.
+    Returns oil probability, pixel counts, bounding box, centroid, and rendered mask/overlay URLs.
+    """
+    try:
+        image_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to read image file: {e}"
+        )
+
+    adapter = get_ml_adapter()
+    detection = adapter.detect_spill(
+        image_bytes=image_bytes,
+        incident_id="SAR-LIVE-SCAN",
+        origin_lat=18.868,
+        origin_lon=72.132,
+        pixel_res_meters=20.0
+    )
+
+    return {
+        "status": "success",
+        "model_version": detection.model_version,
+        "confidence": detection.confidence,
+        "area_km2": detection.area_km2,
+        "perimeter_km": detection.perimeter_km,
+        "elongation": detection.elongation,
+        "centroid_lat": detection.centroid_lat,
+        "centroid_lon": detection.centroid_lon,
+        "polygon_geojson": detection.polygon_geojson,
+        "mask_url": detection.mask_url,
+        "overlay_url": detection.overlay_url,
+        "raw_prediction": detection.raw_prediction,
+        "datasets": [
+            "https://www.kaggle.com/datasets/harikrishnacs/sentinel-1-sar-oil-spill-detection-dataset",
+            "https://www.kaggle.com/datasets/bitsandlayers/sar-oil-spill-segmentation-dataset-sos"
+        ]
+    }

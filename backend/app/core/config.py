@@ -41,8 +41,9 @@ class Settings(BaseSettings):
         )
 
     # ML Adapter configuration
-    ML_MODE: str = "mock"  # "mock" or "inference"
+    ML_MODE: str = "render"  # "mock", "inference", or "render"
     MODEL_PATH: Optional[str] = None
+    RENDER_ML_API_URL: str = "https://maris-oil-spill-api.onrender.com"
 
     # Oceanographic & Drift configuration
     OCEAN_DATA_PROVIDER: str = "cached"  # "cached", "era5", "copernicus"
