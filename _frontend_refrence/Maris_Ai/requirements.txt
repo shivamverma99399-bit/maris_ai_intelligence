@@ -1,0 +1,2 @@
+# MARIS does not use Python dependencies.
+# Frontend dependencies are managed through package.json.

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+env/
+
+# Next.js & Frontend Build Outputs
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Python Cache & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local Databases & Logs
+*.db
+*.sqlite
+*.sqlite3
+maris.db
+backend/maris.db
+*.log
+
+# Environment Files
+.env
+backend/.env
+frontend/.env.local
+frontend/.env*.local
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.planning/
+
+# Large media files
+2.mp4

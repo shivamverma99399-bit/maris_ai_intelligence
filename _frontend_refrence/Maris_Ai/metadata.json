@@ -1,0 +1,7 @@
+{
+  "name": "MARIS - Oil Spill Investigation Simulation",
+  "description": "Interactive demo simulation demonstrating the MARIS oil-spill investigation workflow: satellite SAR detection, spill reconstruction, hindcast origin, AIS correlation, candidate vessel attribution, and future forecast.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
