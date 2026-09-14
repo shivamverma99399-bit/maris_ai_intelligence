@@ -1,0 +1,42 @@
+# ==============================================================================
+# MARIS — Maritime AI Intelligence System
+# Master Python Dependencies (Root & Backend)
+# Smart India Hackathon 2026 | Problem Statement 26143
+# ==============================================================================
+
+# Core API Framework & ASGI Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+python-multipart>=0.0.9
+
+# Database & Spatial ORM
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+geoalchemy2>=0.15.0
+
+# Geospatial, Vector, & Oceanographic Analysis
+shapely>=2.0.0
+geopandas>=0.14.0
+pandas>=2.2.0
+numpy>=1.26.0
+
+# Computer Vision & Satellite SAR Image Processing
+Pillow>=10.0.0
+opencv-python-headless>=4.9.0
+
+# Machine Learning Inference Engines
+torch>=2.2.0
+onnxruntime>=1.17.0
+# Optional for local Keras/TensorFlow pipelines:
+# tensorflow>=2.16.0
+
+# HTTP Networking & Live Cloud ML Model API Client
+httpx>=0.27.0
+requests>=2.31.0
+python-dotenv>=1.0.1
+
+# Automated Testing & Verification
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
