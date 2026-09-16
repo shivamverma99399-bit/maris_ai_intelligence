@@ -20,6 +20,15 @@ __all__ = [
     "CandidateVessel",
 ]
 
+from sqlalchemy import text
+
 def init_db(engine):
     """Initializes all model tables in the target database."""
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+                conn.commit()
+        except Exception:
+            pass
     Base.metadata.create_all(bind=engine)
