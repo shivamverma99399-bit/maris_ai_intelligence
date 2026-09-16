@@ -117,22 +117,13 @@ export const SatelliteImageAnalysisModal: React.FC<SatelliteImageAnalysisModalPr
 
   if (!isOpen) return null;
 
-  const handleSelectDemoImage = () => {
-    setSelectedImage("/textures/sentinel1_sar_spill_demo.png");
-    setRawFile(null);
-    setFileName("sentinel1_2026_mumbai_high_sar.png");
-    setFileSize("142.8 KB");
-    setResolution("512 x 512");
-    setStage("preview");
-  };
-
   const handleFileUpload = (file: File) => {
     const url = URL.createObjectURL(file);
     setSelectedImage(url);
     setRawFile(file);
     setFileName(file.name);
     setFileSize(`${(file.size / 1024).toFixed(1)} KB`);
-    setResolution("1280 x 1280");
+    setResolution("Native");
     setStage("preview");
   };
 
@@ -145,115 +136,79 @@ export const SatelliteImageAnalysisModal: React.FC<SatelliteImageAnalysisModalPr
   };
 
   const handleStartAnalysis = async () => {
+    if (!rawFile) return;
+
     setStage("scanning");
     setIsCallingAPI(true);
 
     try {
-      let fileToUpload = rawFile;
+      const formData = new FormData();
+      formData.append("file", rawFile);
 
-      // If user clicked demo image without uploading a file, fetch the SAR demo texture as a Blob
-      if (!fileToUpload) {
-        try {
-          const res = await fetch("/textures/sentinel1_sar_spill_demo.png");
-          const blob = await res.blob();
-          fileToUpload = new File([blob], "sentinel1_demo_sar.png", { type: "image/png" });
-        } catch {
-          fileToUpload = null;
-        }
-      }
+      // First attempt: Dynamic MARIS backend endpoint
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "");
+      const predictUrl = apiBase.endsWith("/api/v1") ? `${apiBase}/ml/predict-live` : `${apiBase}/api/v1/ml/predict-live`;
 
-      if (fileToUpload) {
-        const formData = new FormData();
-        formData.append("file", fileToUpload);
+      let response = await fetch(predictUrl, {
+        method: "POST",
+        body: formData,
+      }).catch(() => null);
 
-        // First attempt: Dynamic MARIS backend endpoint
-        const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "");
-        const predictUrl = apiBase.endsWith("/api/v1") ? `${apiBase}/ml/predict-live` : `${apiBase}/api/v1/ml/predict-live`;
-
-        let response = await fetch(predictUrl, {
+      // Second attempt: Direct Render Cloud ML API
+      if (!response || !response.ok) {
+        response = await fetch("https://maris-oil-spill-api.onrender.com/predict", {
           method: "POST",
           body: formData,
         }).catch(() => null);
 
-        // Second attempt: Direct Render Cloud ML API
-        if (!response || !response.ok) {
-          response = await fetch("https://maris-oil-spill-api.onrender.com/predict", {
-            method: "POST",
-            body: formData,
-          }).catch(() => null);
-
-          if (response && response.ok) {
-            const rawData = await response.json();
-            const res = rawData.result || {};
-            const files = rawData.files || {};
-            const isDetected = res.result === "OIL_DETECTED";
-            setLiveResult({
-              status: "success",
-              model_version: "sentinel1-sar-unet-v1.0-render",
-              confidence: isDetected ? (res.oil_probability || 0.92) : (res.oil_probability || 0.15),
-              area_km2: isDetected ? (res.spill_area ? Number((res.spill_area.oil_pixels * 0.0004).toFixed(2)) : 18.45) : 0.0,
-              perimeter_km: isDetected ? (res.perimeter || 37.55) : 0.0,
-              elongation: isDetected ? 3.2 : 1.0,
-              centroid_lat: 18.868815,
-              centroid_lon: 72.131203,
-              mask_url: files.mask,
-              overlay_url: files.overlay,
-              raw_prediction: res,
-              datasets: [
-                "https://www.kaggle.com/datasets/harikrishnacs/sentinel-1-sar-oil-spill-detection-dataset",
-                "https://www.kaggle.com/datasets/bitsandlayers/sar-oil-spill-segmentation-dataset-sos",
-              ],
-            });
-            return;
-          }
-        }
-
         if (response && response.ok) {
-          const data = await response.json();
-          setLiveResult(data);
+          const rawData = await response.json();
+          const res = rawData.result || {};
+          const files = rawData.files || {};
+          const isDetected = res.result === "OIL_DETECTED";
+          setLiveResult({
+            status: "success",
+            model_version: "sentinel1-sar-unet-v1.0-render",
+            confidence: Number(res.oil_probability || 0.0),
+            area_km2: isDetected && res.spill_area ? Number((res.spill_area.oil_pixels * 0.0004).toFixed(2)) : 0.0,
+            perimeter_km: isDetected ? Number(res.perimeter || 0.0) : 0.0,
+            elongation: isDetected ? 2.8 : 1.0,
+            centroid_lat: 18.868815,
+            centroid_lon: 72.131203,
+            mask_url: files.mask,
+            overlay_url: files.overlay,
+            raw_prediction: res,
+            datasets: [
+              "https://www.kaggle.com/datasets/harikrishnacs/sentinel-1-sar-oil-spill-detection-dataset",
+              "https://www.kaggle.com/datasets/bitsandlayers/sar-oil-spill-segmentation-dataset-sos",
+            ],
+          });
+          return;
         }
-      } else {
-        // Calibrated baseline if offline
-        setLiveResult({
-          status: "success",
-          model_version: "sentinel1-sar-unet-v1.0-calibrated",
-          confidence: 0.94,
-          area_km2: 18.45,
-          perimeter_km: 26.8,
-          elongation: 3.2,
-          centroid_lat: 18.868815,
-          centroid_lon: 72.131203,
-          mask_url: null,
-          overlay_url: null,
-          raw_prediction: { result: "OIL_DETECTED", oil_probability: 0.94 },
-          datasets: [
-            "https://www.kaggle.com/datasets/harikrishnacs/sentinel-1-sar-oil-spill-detection-dataset",
-            "https://www.kaggle.com/datasets/bitsandlayers/sar-oil-spill-segmentation-dataset-sos",
-          ],
-        });
+      }
+
+      if (response && response.ok) {
+        const data = await response.json();
+        setLiveResult(data);
       }
     } catch (err) {
-      console.warn("ML live prediction fallback invoked:", err);
+      console.warn("ML live prediction error:", err);
     } finally {
       setIsCallingAPI(false);
     }
   };
 
-  // Check whether oil was positively detected
+  // Check whether oil was positively detected by the live model
   const isOilDetected = liveResult
-    ? (liveResult.raw_prediction?.result === "OIL_DETECTED" || liveResult.area_km2 > 0 || liveResult.confidence > 0.5)
-    : true;
+    ? (liveResult.raw_prediction?.result === "OIL_DETECTED" || (liveResult.area_km2 > 0 && liveResult.confidence > 0.5))
+    : false;
 
-  // Derive active confidence & area from live result or calibrated baseline
+  // Derive active confidence & area strictly from the live ML result
   const displayConfidence = liveResult
-    ? (isOilDetected ? Math.round(liveResult.confidence * 100) : Math.round((1 - liveResult.confidence) * 100))
-    : 94;
-  const displayArea = isOilDetected
-    ? (liveResult?.area_km2 ? liveResult.area_km2 : 18.45)
-    : 0.0;
-  const displayPerimeter = isOilDetected
-    ? (liveResult?.perimeter_km ? liveResult.perimeter_km : 26.8)
-    : 0.0;
+    ? Math.round(liveResult.confidence * 100)
+    : 0;
+  const displayArea = liveResult?.area_km2 || 0.0;
+  const displayPerimeter = liveResult?.perimeter_km || 0.0;
 
   return (
     <div
@@ -362,22 +317,16 @@ export const SatelliteImageAnalysisModal: React.FC<SatelliteImageAnalysisModalPr
               </div>
 
               {/* Ingestion Footer: AI Model Status & Kaggle Datasets */}
-              <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] pt-2">
+              <div className="w-full flex items-center justify-between gap-3 text-[11px] pt-2">
                 <div className="flex items-center gap-2 text-[#81758F]">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>
-                    LIVE ML MODEL READY // Trained on Sentinel-1 SAR & SOS Segmentation Datasets
+                    LIVE ML INFERENCE ACTIVE // Sentinel-1 SAR Deep Learning U-Net
                   </span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleSelectDemoImage}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl maris-btn-investigate text-white font-bold text-xs shadow-[0_0_15px_rgba(176,38,255,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>TRY DEMO IMAGE</span>
-                </button>
+                <span className="text-[10px] text-[#A78BFA] font-mono">
+                  DROP OR SELECT FILE TO SCAN
+                </span>
               </div>
 
               {/* Kaggle Dataset Badges */}
