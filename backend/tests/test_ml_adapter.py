@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import pytest
 from PIL import Image
-import torch
+torch = pytest.importorskip("torch", reason="PyTorch optional in lightweight production deployment")
 
 from app.engines.ml_unet import UNet, preprocess_sar_image, export_unet_to_onnx
 from app.services.ml_service import MockMLAdapter, InferenceMLAdapter, get_ml_adapter, SpillDetectionResult
