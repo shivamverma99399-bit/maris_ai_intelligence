@@ -1,6 +1,6 @@
 import io
 import os
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Any
 import numpy as np
 from PIL import Image
 
@@ -11,11 +11,13 @@ try:
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
-    nn = object
+    class _MockNN:
+        Module = object
+    nn = _MockNN()
 
 from app.core.logging import logger
 
-class DoubleConv(nn.Module if HAS_TORCH else object):
+class DoubleConv(nn.Module):
     """(Convolution => [BatchNorm] => ReLU) * 2"""
     def __init__(self, in_channels: int, out_channels: int, mid_channels: Optional[int] = None):
         super().__init__()
@@ -36,7 +38,7 @@ class DoubleConv(nn.Module if HAS_TORCH else object):
         return self.double_conv(x)
 
 
-class Down(nn.Module if HAS_TORCH else object):
+class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
@@ -51,7 +53,7 @@ class Down(nn.Module if HAS_TORCH else object):
         return self.maxpool_conv(x)
 
 
-class Up(nn.Module if HAS_TORCH else object):
+class Up(nn.Module):
     """Upscaling then double conv"""
     def __init__(self, in_channels: int, out_channels: int, bilinear: bool = True):
         super().__init__()
@@ -73,7 +75,7 @@ class Up(nn.Module if HAS_TORCH else object):
         return self.conv(x)
 
 
-class OutConv(nn.Module if HAS_TORCH else object):
+class OutConv(nn.Module):
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
         if not HAS_TORCH:
@@ -84,7 +86,7 @@ class OutConv(nn.Module if HAS_TORCH else object):
         return self.conv(x)
 
 
-class UNet(nn.Module if HAS_TORCH else object):
+class UNet(nn.Module):
     """
     Standard U-Net Architecture tailored for Satellite SAR Oil Spill Segmentation.
     Input: (B, C, H, W) where C=1 (VV intensity) or C=2 (VV/VH dual polarization).
@@ -166,7 +168,7 @@ def preprocess_sar_image(
 
 
 def export_unet_to_onnx(
-    model: nn.Module,
+    model: Any,
     output_path: str,
     input_shape: Tuple[int, int, int, int] = (1, 1, 256, 256)
 ) -> str:
