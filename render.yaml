@@ -1,0 +1,42 @@
+# ==============================================================================
+# MARIS — Render Infrastructure Blueprint (render.yaml)
+# Enables 1-Click Zero-Configuration Deployment on Render
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # FastAPI Oceanographic & AI Attribution Backend
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: maris-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: ML_MODE
+        value: render
+      - key: RENDER_ML_API_URL
+        value: https://maris-oil-spill-api.onrender.com
+      - key: OCEAN_DATA_PROVIDER
+        value: cached
+      # Automatically wires database connection string from the managed database below
+      - key: DATABASE_URL
+        fromDatabase:
+          name: maris-postgres
+          property: connectionString
+
+# ------------------------------------------------------------------------------
+# Managed PostgreSQL with PostGIS Spatial Extensions
+# ------------------------------------------------------------------------------
+databases:
+  - name: maris-postgres
+    plan: free
+    databaseName: maris_db
+    user: maris_admin

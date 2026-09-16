@@ -9,6 +9,14 @@ from app.api.v1 import api_router
 async def lifespan(app: FastAPI):
     """Modern lifespan handler for startup and shutdown events."""
     logger.info(f"Starting {settings.PROJECT_NAME} backend in {settings.ENVIRONMENT} mode...")
+    try:
+        from app.core.database import engine
+        from app.models import init_db
+        if engine is not None:
+            init_db(engine)
+            logger.info("Database schemas verified/initialized successfully.")
+    except Exception as e:
+        logger.warning(f"Database schema auto-initialization deferred: {e}")
     yield
     logger.info(f"Shutting down {settings.PROJECT_NAME} backend...")
 

@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         """Computes the primary SQLAlchemy connection URI."""
         if self.DATABASE_URL:
+            # Render/Heroku provide postgres:// which SQLAlchemy 2.0 requires as postgresql://
+            if self.DATABASE_URL.startswith("postgres://"):
+                return self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
             return self.DATABASE_URL
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"

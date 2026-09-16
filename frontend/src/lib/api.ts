@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "");
+const API_BASE = rawApiUrl.endsWith("/api/v1") ? rawApiUrl : `${rawApiUrl}/api/v1`;
+const DEFAULT_TIMEOUT_MS = 15000;
+const INVESTIGATION_TIMEOUT_MS = 30000;
 
 export interface Incident {
   id: number;
@@ -159,7 +162,7 @@ import {
 export const api = {
   async getIncidents(): Promise<Incident[]> {
     try {
-      const res = await fetch(`${API_BASE}/incidents`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/incidents`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error("Failed to fetch incidents");
       const data = await res.json();
       return Array.isArray(data) && data.length > 0 ? data : [DEMO_INCIDENT];
@@ -178,7 +181,7 @@ export const api = {
           title: "Mumbai High Offshore Slick Detection",
           incident_id: incidentId
         }),
-        signal: AbortSignal.timeout(3000)
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS)
       });
       if (!res.ok) throw new Error("Failed to create incident");
       return await res.json();
@@ -189,7 +192,7 @@ export const api = {
 
   async getIncident(incidentId: string): Promise<Incident> {
     try {
-      const res = await fetch(`${API_BASE}/incidents/${incidentId}`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/incidents/${incidentId}`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Failed to fetch incident ${incidentId}`);
       return await res.json();
     } catch {
@@ -199,7 +202,7 @@ export const api = {
 
   async getProbableOrigin(incidentId: string): Promise<OriginEstimate> {
     try {
-      const res = await fetch(`${API_BASE}/origin/${incidentId}`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/origin/${incidentId}`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Failed to fetch origin for ${incidentId}`);
       return await res.json();
     } catch {
@@ -209,7 +212,7 @@ export const api = {
 
   async getTrajectories(incidentId: string): Promise<{ incident_id: string; total_vessels: number; vessels: VesselTrajectory[] }> {
     try {
-      const res = await fetch(`${API_BASE}/ais/${incidentId}/trajectories?step_minutes=15`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/ais/${incidentId}/trajectories?step_minutes=15`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Failed to fetch trajectories for ${incidentId}`);
       return await res.json();
     } catch {
@@ -223,7 +226,7 @@ export const api = {
 
   async getAttribution(incidentId: string, forceRecompute: boolean = false): Promise<{ incident_id: string; total_candidates: number; candidates: CandidateVessel[] }> {
     try {
-      const res = await fetch(`${API_BASE}/candidates/${incidentId}/attribution?force_recompute=${forceRecompute}`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/candidates/${incidentId}/attribution?force_recompute=${forceRecompute}`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Failed to fetch attribution for ${incidentId}`);
       return await res.json();
     } catch {
@@ -237,7 +240,7 @@ export const api = {
 
   async getVesselDossier(incidentId: string, mmsi: number): Promise<VesselDossier> {
     try {
-      const res = await fetch(`${API_BASE}/candidates/${incidentId}/dossier/${mmsi}`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE}/candidates/${incidentId}/dossier/${mmsi}`, { signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Failed to fetch dossier for vessel ${mmsi}`);
       return await res.json();
     } catch {
@@ -259,7 +262,7 @@ export const api = {
     try {
       const res = await fetch(
         `${API_BASE}/incidents/${incidentId}/investigation?force_recompute=${forceRecompute}`,
-        { signal: AbortSignal.timeout(6000) }
+        { signal: AbortSignal.timeout(INVESTIGATION_TIMEOUT_MS) }
       );
       if (!res.ok) throw new Error(`Failed to fetch investigation for ${incidentId}`);
       return await res.json();

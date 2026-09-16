@@ -13,7 +13,7 @@ def test_system_config_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["project_name"] == settings.PROJECT_NAME
-    assert data["ml_mode"] == "mock"
+    assert data["ml_mode"] == settings.ML_MODE
     assert "opendrift_particles" in data
 
 def test_database_health_probe_reporting():
